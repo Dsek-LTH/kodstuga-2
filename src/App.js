@@ -1,44 +1,44 @@
 import './App.css';
 import { useState, useEffect } from 'react';
-import TextField from '@mui/material/TextField';
-import { Button } from '@mui/material';
+import { Container, Stack } from '@mui/material';
 import Order from './components/Order';
+import AvailableOrders from './components/AvailableOrders';
 
 function App() {
-  const [data, setData] = useState([]);
-  const [newOrder, setNewOrder] = useState("");
+  const [unfinishedOrders, setUnfinishedOrders] = useState([]);
+  const [finishedOrders, setFinishedOrders] = useState([]);
+
+  const fetchAllData = () => {
+    fetch('https://dsek-queue.herokuapp.com/api')
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        setUnfinishedOrders(responseData.filter((order) => !order.isDone));
+        setFinishedOrders(responseData.filter((order) => order.isDone));
+      });
+  };
+
   useEffect(() => {
-    fetch("https://dsek-queue.herokuapp.com/api").then((response) => {
-      return response.json();
-    })
-    .then((responseData) => {
-      setData(responseData);
-    })
-  }, [])
+    fetchAllData();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <TextField value={newOrder} onChange={(event) => {
-            setNewOrder(event.target.value);
-        }} variant="filled" />
-        <Button onClick={() => {
-          const formData = new FormData();
-          formData.append("content", newOrder);
-          fetch("https://dsek-queue.herokuapp.com/api", {method: "POST", body: formData})
-        }}>Lägg till</Button>
-        {data.map((order) => (
-          <Order order={order} />
+    <Container style={{ padding: '5rem' }}>
+      <AvailableOrders refetch={fetchAllData} />
+      <h1>Färdigt</h1>
+      <Stack direction="row" flexWrap="wrap" minHeight="11rem">
+        {finishedOrders.map((order) => (
+          <Order order={order} fetchAllData={fetchAllData} />
         ))}
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      </Stack>
+      <h1>Tillagas</h1>
+      <Stack direction="row" flexWrap="wrap">
+        {unfinishedOrders.map((order) => (
+          <Order order={order} fetchAllData={fetchAllData} />
+        ))}
+      </Stack>
+    </Container>
   );
 }
 
